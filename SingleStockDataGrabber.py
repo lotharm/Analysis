@@ -35,6 +35,7 @@ import time
 import csv
    
 import SingelStockDataGrabber_stats
+import RSI_strat_SETUP
 import my_setup
 import logging
 
@@ -121,7 +122,7 @@ for index, row in universe.iterrows():
         #print("################################")
         #print("Anzhal Wochen: ", Anz)
         #print("################################")
-        enddatum = SingelStockDataGrabber_stats.enddatum 
+        end_date = RSI_strat_SETUP.enddatum 
          
         #### End_date: Letztes Dtaum der Zeitreihe der Preise !
         end_date = datetime.date.today()

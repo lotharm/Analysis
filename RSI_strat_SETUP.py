@@ -14,7 +14,7 @@ import my_setup
 mypath = my_setup.path + my_setup.specific_datapath 
 output_path = my_setup.output_path
 
-startdatum = "2005-10-01"
+startdatum = "2011-10-01"
 enddatum = "2022-05-30"
 
 #https://www.tradingview.com/x/RHiQkrp0/

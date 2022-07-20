@@ -13,7 +13,7 @@ import my_setup
 path = my_setup.path
 
 ######################################################
-stock = ["LIN",]
+stock = ["ITB",]
 #####################################################
 keyword = "macro"
 
@@ -25,7 +25,7 @@ Universe = {'quellpfad':[path],
             'tmpdatadir':[path+my_setup.specific_datapath],
             } 
 
-enddatum=my_setup.enddatum 
+
 Anzahl = 0 
 
 periode = "15y"
