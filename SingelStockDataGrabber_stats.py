@@ -8,21 +8,40 @@ Created on Wed Apr 28 13:21:14 2021
 #zykliker: Chemie , rohstoofe (spaet im zyklus)Bauträger, Maschiennebau, REITS, Banken, Versicheurngen, Autobauer, ReisenHotels, Kreuztfahreten
 #Antizyklishc/Defneisv: telekom, nestle, Metro,
 
-import my_setup
+###### Insert the following three lines to make any import lib in he project dir setup visible to an other
+###### Directory in the project setup
+import os
+import sys
+currentdir = os.path.abspath('')
+parentdir = os.path.realpath(os.path.join(currentdir, '..'))
+sys.path.insert(0, parentdir) 
+#############################################################
 
-path = my_setup.path
+from MomentumScreening import my_setup
+###
+### The whole /ETFS/ Tree has to be located on ame level as repository !
+pfad = os.path.realpath(os.path.join(parentdir, '..'))
+pfad = os.path.realpath(os.path.join(pfad, 'ETFS'))
+
+
 
 ######################################################
 stock = ["ITB",]
 #####################################################
 keyword = "macro"
 
-Universe = {'quellpfad':[path],
+mypath = os.path.realpath(os.path.join(pfad, my_setup.specific_datapath)) 
+
+output_path = mypath
+
+keyword = "macro"
+
+Universe = {'quellpfad':[pfad],
             'quelldatei': [keyword], 
-            'plotdir':[path+my_setup.specific_datapath],
-            'resdir':[path+my_setup.specific_datapath],
-            'vamsdir':[path+my_setup.specific_datapath],
-            'tmpdatadir':[path+my_setup.specific_datapath],
+            'plotdir':[mypath],
+            'resdir':[mypath],
+            'vamsdir':[mypath],
+            'tmpdatadir':[mypath],
             } 
 
 

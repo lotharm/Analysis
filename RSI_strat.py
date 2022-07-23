@@ -44,6 +44,7 @@ import plotly.graph_objects as go
 from pandas import ExcelWriter
 
 
+
 import RSI_strat_SETUP
 import plotly.io as pio
 pio.renderers.default = "vscode"
@@ -135,7 +136,7 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
     roll_window = RSI_strat_SETUP.roll_window
 
 
-    mypath = RSI_strat_SETUP.mypath
+    mypath = RSI_strat_SETUP.mypath +"/"
 
     #onlyfiles = [f for f in listdir(mypath) if (isfile(join(mypath, f)) and not f.startswith("_")) ]
 

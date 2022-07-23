@@ -8,10 +8,24 @@ Created on Fri Feb 19 08:46:16 2021
 
 # Liest ETF historien von yahoo finance aus und macth ein ranking.
 
+import os
+import sys
+currentdir = os.path.abspath('')
+parentdir = os.path.realpath(os.path.join(currentdir, '..'))
+sys.path.insert(0, parentdir) 
+#############################################################
+
+from MomentumScreening import my_setup
+###
+### The whole /ETFS/ Tree has to be located on ame level as repository !
+pfad = os.path.realpath(os.path.join(parentdir, '..'))
+pfad = os.path.realpath(os.path.join(pfad, 'ETFS'))
+
+##########################################################################
 
 
-import TickerSelector, regression
-import StockscreenerWinners_stats
+from MomentumScreening import TickerSelector, regression
+from MomentumScreening import StockscreenerWinners_stats
 from lib import Indikatoren
 
  
@@ -36,7 +50,7 @@ import csv
    
 import SingelStockDataGrabber_stats
 import RSI_strat_SETUP
-import my_setup
+from MomentumScreening import my_setup
 import logging
 
 
@@ -64,7 +78,7 @@ yf.pdr_override()
 universe = pd.DataFrame(SingelStockDataGrabber_stats.Universe)
 
 if my_setup.logger == "On":
-    logging.basicConfig(filename=my_setup.path + "ETFS/LOG/" +
+    logging.basicConfig(filename=os.path.realpath(os.path.join(pfad, 'LOG'))+"//"+
                         str(datetime.datetime.now().day)+
                         "--"+str(datetime.datetime.now().hour)+"-"+
                         str(datetime.datetime.now().minute)+".log",
