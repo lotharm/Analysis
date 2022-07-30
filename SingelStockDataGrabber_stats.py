@@ -20,8 +20,7 @@ sys.path.insert(0, parentdir)
 from MomentumScreening import my_setup
 ###
 ### The whole /ETFS/ Tree has to be located on ame level as repository !
-pfad = os.path.realpath(os.path.join(parentdir, '..'))
-pfad = os.path.realpath(os.path.join(pfad, 'ETFS'))
+pfad = os.path.realpath(os.path.join(parentdir, 'ETFS'))
 
 
 

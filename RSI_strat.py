@@ -136,7 +136,7 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
     roll_window = RSI_strat_SETUP.roll_window
 
 
-    mypath = RSI_strat_SETUP.mypath +"/"
+    mypath = RSI_strat_SETUP.mypath +"//"
 
     #onlyfiles = [f for f in listdir(mypath) if (isfile(join(mypath, f)) and not f.startswith("_")) ]
 
@@ -315,7 +315,7 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
     
 
 
-    RSI_strat_SETUP.figures_to_html([fig, figs[0],figRSIHist,fig0,fig1,fig2,fig3,fig4,fig00],RSI_strat_SETUP.output_path + "dashboard.html")
+    RSI_strat_SETUP.figures_to_html([fig, figs[0],figRSIHist,fig0,fig1,fig2,fig3,fig4,fig00],RSI_strat_SETUP.output_path + "//"+dashboard.html")
 
 
 

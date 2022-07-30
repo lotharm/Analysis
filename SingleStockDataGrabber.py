@@ -18,11 +18,10 @@ sys.path.insert(0, parentdir)
 from MomentumScreening import my_setup
 ###
 ### The whole /ETFS/ Tree has to be located on ame level as repository !
-pfad = os.path.realpath(os.path.join(parentdir, '..'))
-pfad = os.path.realpath(os.path.join(pfad, 'ETFS'))
+
+pfad = os.path.realpath(os.path.join(parentdir, 'ETFS'))
 
 ##########################################################################
-
 
 from MomentumScreening import TickerSelector, regression
 from MomentumScreening import StockscreenerWinners_stats
@@ -78,7 +77,7 @@ yf.pdr_override()
 universe = pd.DataFrame(SingelStockDataGrabber_stats.Universe)
 
 if my_setup.logger == "On":
-    logging.basicConfig(filename=os.path.realpath(os.path.join(pfad, 'LOG'))+"//"+
+    logging.basicConfig(filename=os.path.realpath(os.path.join(parentdir, 'LOG'))+"//"+
                         str(datetime.datetime.now().day)+
                         "--"+str(datetime.datetime.now().hour)+"-"+
                         str(datetime.datetime.now().minute)+".log",
@@ -262,21 +261,22 @@ for index, row in universe.iterrows():
 
                 df["momentum"]=df["Factor"]-df["EMA10"]+df["EMA21"] -df["EMA50"] +df["EMA100"]-df["EMA200"]
                 
-                
+                Indikatoren.MACD(df, 12, 26,9,"_day")
+                Indikatoren.MACD(df, 60, 130,45,"_week") 
 
 
                 returns_multiple = 100*round(stock_return-1.0, 4)
                 print (f'Ticker: {ticker}; Returns Multiple: {returns_multiple:.2f} %\n')
-                df.to_csv(tmpdatafile + 'holc_data.csv',sep=";",decimal=',', float_format='%.5f',)               
+                df.to_csv(tmpdatafile+"//" + 'holc_data.csv',sep=";",decimal=',', float_format='%.5f',)               
             ## schreibe Ticker und die Longnames raus !
             _ticker_names = pd.DataFrame(list(zip(true_tickers,true_names,true_industry,true_sector,true_marketCap)),
                             columns=['ticker','name','industry',"sector","marketCap"])
             _ticker_names = _ticker_names.sort_values("ticker")               
-            _ticker_names.to_csv(tmpdatafile + "_ticker_names.csv",sep=";")  
+            _ticker_names.to_csv(tmpdatafile +"//"+ "_ticker_names.csv",sep=";")  
         
         if shitflag==False:
             shitflag = True    
-            shit_file = open(resfile+"_shit"+'.csv','w')
+            shit_file = open(resfile+"//"+"_shit"+'.csv','w')
             for item in shit_list:
                 shit_file.write(item+"\n")
             shit_file.close()    
