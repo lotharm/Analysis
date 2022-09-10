@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 
-#%%
-
 """
 Created on Wed Jul  7 17:46:12 2021
 
 @author: Schroeder
 """
+
+from turtle import color
+import matplotlib
+from matplotlib import colors
+
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+from mpl_toolkits.mplot3d import Axes3D
 
 
 from pathlib import Path
@@ -27,6 +35,7 @@ import sys, getopt
 #from yahoo_fin import stock_info as si
 
 import numpy as np
+import numpy as np
 from sklearn import linear_model
 import scipy.stats
 
@@ -38,31 +47,27 @@ import pandas as pd
 
 import plotly.io as pio
 import plotly.express as px
-from plotly.figure_factory import create_candlestick
+from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from plotly.offline import init_notebook_mode, iplot
 
 from pandas import ExcelWriter
 
 
 
-import RSI_strat_SETUP
-import plotly.io as pio
-pio.renderers.default = "vscode"
-#pio.renderers.default = "browser"
+#from sympy import maximum
 
-#MACD, MACD Signal and MACD difference
-# def MACD(df, n_fast, n_slow):
-#     mac = pd.dataframe()
-#     #df["EMA200"]=df["Factor"].ewm(span=200,adjust=False).mean()
-#     EMAfast = df['Close'].ewm(span = n_fast, min_periods = n_slow - 1).mean()
-#     EMAslow = df['Close'].ewm(span = n_slow, min_periods = n_slow - 1).mean()
-#     MACD['MACD_' + str(n_fast) + '_' + str(n_slow)] = EMAfast - EMAslow
-#     MACD['MACDsign_' + str(n_fast) + '_' + str(n_slow)] = MACD['MACD_' + str(n_fast) + '_' + str(n_slow)].ewm(span = 9, min_periods = 8).mean()
-#     MACD['MACDdiff_' + str(n_fast) + '_' + str(n_slow)] = MACD - MACDsign
-#     df = df.join(MACD)
-#     df = df.join(MACDsign)
-#     df = df.join(MACDdiff)
-#     return df
+import RSI_strat_SETUP
+
+
+
+
+#init_notebook_mode()
+
+from lib import Indikatoren
+
+#pio.renderers.default = "vscode"
+#pio.renderers.default = "browser"
 
 
 def figupdate_nonHist(figure,xtit="",ytit=""):
@@ -125,18 +130,10 @@ def RSI(df, n):
 
 
 
+def main(stock,t_bwd,t_fwd,r_bwd, condi):
 
 
-
-
-def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
-
-    enddatum = RSI_strat_SETUP.enddatum
-    startdatum = RSI_strat_SETUP.startdatum
-    roll_window = RSI_strat_SETUP.roll_window
-
-
-    mypath = RSI_strat_SETUP.mypath +"//"
+    mypath = RSI_strat_SETUP.mypath
 
     #onlyfiles = [f for f in listdir(mypath) if (isfile(join(mypath, f)) and not f.startswith("_")) ]
 
@@ -147,10 +144,10 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
 
     ###########################
     ##########################
-    time_gap_fwd = fwd_gap
-    time_gap_back = bwd_gap
+    time_gap_fwd = t_fwd
+    time_gap_back = t_bwd
     rsi_threshold =75
-    return_threshold = threshold_bwd
+    return_threshold = r_bwd
     my_bins = 50
     ########################
     ########################
@@ -158,7 +155,7 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
 
     for ticker in [stock,]:
    
-            df = pd.read_csv(mypath + ticker,sep=";",decimal=',',
+            df = pd.read_csv(mypath + "//"+ticker,sep=";",decimal=',',
                             parse_dates=True,
                             index_col=0)
 
@@ -168,46 +165,102 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
             df=df.truncate(before=startdatum)
             df=df.truncate(after=enddatum)
 
-            fig = px.line(df, x=df.index, y="Close")
+            fig_close = px.line(df, x=df.index, y="Close")
+            
+            
+            
+            fig = px.line(df, x=df.index, y=[df['MACD_day'], df['MACDsign_day'], df['MACDdif_day']])
             fig.show()
+           
+            fig = px.line(df, x=df.index, y=[df['MACD_week'], df['MACDsign_week'], df['MACDdif_week']])
+            fig.show()
+  
+        
 
             df = RSI(df, 21)
+            
+            df["EMA50_dist"] = df["Factor"]-df["EMA50"]
+            # Some statistics:  pecentile:
+            #df.rolling(window=3, center=False).apply(lambda x: pd.Series(x).quantile(0.75))
+            
+            #z-Score
+            ############################
+            window=100
+            Indikatoren.Zscore_rolling(df, 'EMA50_dist',window)
+            
+            #target_column = 'EMA50_dist'
+            #roll = df[target_column].rolling(window)
+            #df['z-score'] = (df[target_column] - roll.mean()) / roll.std()
+            
+            
+            fig_zscore = px.line(df, x=df.index, y="z-score",title="z-score of Deviation of EMA_50")
 
+            fig_zscore_close = make_subplots(rows=2,cols=1,shared_xaxes=True,subplot_titles=("Close","zscore"))
+            fig_zscore_close.add_trace(fig_zscore["data"][0],row=2,col=1)
+            fig_zscore_close.add_trace(fig_close["data"][0],row=1,col=1)
 
+            fig_zscore_close.update_layout(height=600, width=1000,title_text="zscore vs. price")
+            fig_zscore_close.show()
+            
+            #Schreibe raus den z-score
+            ############################
+            df["z-score"].to_csv(mypath + "fft_"+ticker,sep=";",decimal=',', float_format='%.5f',) 
+            
+            
             ### Formeln geprueft und korrekt:
             # ############################################################################## 
             # mit positivem time_gap in .diff(time_gap):  df[t]= (f(t)-f(t-time_gap))/f(t)
             # also Veränderung ggü. f(t)
             ### Also backward looking return !
-            df["back_"+str(bwd_gap)]= 100*(df["Close"].diff(bwd_gap)/df["Close"])
+            df["back_"+str(t_bwd)]= 100*(df["Close"].diff(t_bwd)/df["Close"])
             
             # mit negativem time_gap in .diff(time_gap):  df[t]= (f(t+time_gap)-f(t))/f(t)
             # also Veränderung ggü. f(t). Der klassische Differenzenequotient also !!!!
             ### Also forckward looking return      
-            df["fwd_"+str(fwd_gap)]= 100*(-df["Close"].diff(-fwd_gap)/df["Close"])
+            df["fwd_"+str(t_fwd)]= 100*(-df["Close"].diff(-t_fwd)/df["Close"])
             #################################################################################
+           
+        
+        
             #### RSi Test
             #rsi_given  = df["RSI_"][df["rsi_sma"] > rsi_threshold]
 
-            
 
             #### Percent Test #####################################################################
             #####    Wenn in time_gap_back Tagen merh als "return_threshold" rendite, dann schreibe
             ####  die  darauf folgende time_gap_fwd rendite nach "a"
 
             ####   select where backward threshold has been passed
-            a = df["fwd_"+str(fwd_gap)][df["back_"+str(bwd_gap)] <= threshold_bwd]
+            a = df["fwd_"+str(t_fwd)][df["back_"+str(t_bwd)] > r_bwd]
 
             a_with_threshold_backward = a.dropna()
             
             ####   select where forward threshold has been passed AS WELL :
-            a_with_threshold_backward_forward =a_with_threshold_backward[a_with_threshold_backward>=threshold_fwd]
+            #a_with_threshold_backward_forward =a_with_threshold_backward[a_with_threshold_backward>=r_fwd]
+            
+            a_with_threshold_backward
+
+            #################################################################################################
             
             #a_with_threshold_backward_forward.plot(kind="bar",title="P(fwd_thres AND bwd_thresH): N_bwd_&_fwd="+str(len(a_with_threshold_backward_forward))+" N_bwd:"+str(len(a)))
-            fig00 = px.bar(a_with_threshold_backward_forward, title = "Terminecluster: bwd AND fwd Thresholds erfuellt ")
-            figupdate_nonHist(fig00,"Datum","Rendite nach "+ str(fwd_gap)+ " Bars")
+            
+            fig00 = px.bar(a_with_threshold_backward, title = "---> Bedingung an r_bwd  erfuellt !")
 
-            a_with_threshold_backward_forward_list= a_with_threshold_backward_forward[a_with_threshold_backward_forward!=0].tolist()
+            fig_true_close = make_subplots(rows=2,cols=1,shared_xaxes=True,subplot_titles=("Close","Dates when true"))
+            fig_true_close.add_trace(fig00["data"][0],row=1,col=1)
+            fig_true_close.add_trace(fig_close["data"][0],row=2,col=1)
+
+            fig_true_close.update_layout(height=600, width=1000,title_text="true vs. price")
+            fig_true_close.show()
+
+
+
+
+            
+            #figupdate_nonHist(fig00,"Datum","---> Rendite nach "+ str(t_fwd)+ " Bars" + " ab r>" + str(r_fwd))
+
+            #a_with_threshold_backward_forward_list= a_with_threshold_backward.tolist()
+            a_with_threshold_backward_list= a_with_threshold_backward.tolist()
 
             figs.append(px.line(df["rsi_sma"],title= "figs: 1. fig show: " + ticker))
             counter+=1
@@ -245,13 +298,13 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
 
 
     ##### renditen nach time_gap_back Zeitschrittten Statistik:
-    backward = df["back_"+str(bwd_gap)].dropna()
+    backward = df["back_"+str(t_bwd)].dropna()
     backward_list=backward.to_list()
     backward_df = pd.DataFrame(backward_list)
 
     ### plotte das HIstogramm der backward auf zwei arten
     #backward_df.plot.hist(bins=my_bins,title="a) back_"+str(bwd_gap)+" backward")
-    fig0=px.histogram(backward_df, nbins=my_bins, title="Histogramm bkwd, dt = -"+str(bwd_gap)+" bars. Ohne Rendite Bedingung !")
+    fig0=px.histogram(backward_df, nbins=my_bins, title="Histogramm der Renditen r_dt mit dt ="+str(t_bwd)+"  bars.")
     figupdate(fig0)
 
 
@@ -266,36 +319,39 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
 
 
     #### renditen Statistik bei gegebenen rsi  thresholds bzw. renditen absolut  !
-    a_with_threshold_backward_forward_hist = np.histogram(a_with_threshold_backward_forward_list, bins=my_bins)
-    a_with_threshold_backward_forward_hist_dist = scipy.stats.rv_histogram(a_with_threshold_backward_forward_hist)
+    a_with_threshold_backward_hist = np.histogram(a_with_threshold_backward_list, bins=my_bins)
+    a_with_threshold_backward_hist_dist = scipy.stats.rv_histogram(a_with_threshold_backward_hist)
 
     
 
 
     ### 2. Histogramm
-    b_df = pd.DataFrame(a_with_threshold_backward_forward_list)
+    b_df = pd.DataFrame(a_with_threshold_backward_list)
     positiv = len(b_df[b_df[0]>0])
     negativ = len(b_df[b_df[0]<0])
-    tite = "Cond. Cum.Prob. der Renditen bkwd= -"+ str(bwd_gap)+" bars,  fwd = "+ str(fwd_gap)+ " bars "
-    tit = "Histogram: "+ tite +"<br>" + "#pos. renditen: "+str(positiv) + " #neg. renditen: " + str(negativ) + "<br>"+ "negP: " + str(round(a_with_threshold_backward_forward_hist_dist.cdf(0),3)) + " posP: " + str(round(1-a_with_threshold_backward_forward_hist_dist.cdf(0),3)) + " <r>: " +  str(round(a_with_threshold_backward_forward_hist_dist.mean(),2)) + "<br>" + condi
+    tite =  " t_bwd= -"+ str(t_bwd)+" bars,  t_fwd = "+ str(t_fwd)+ " bars "
+    tite = tite +"<br>" + "Anzahl fwd Intervalle mit r(t_fwd)>0 : "+str(positiv) + "<br>" +  "Anzahl fwd Intervalle mit r(t_fwd) < 0 : "  + str(negativ) + "<br>"+ "p(r<0): " + str(round(a_with_threshold_backward_hist_dist.cdf(0),3)) + "<br>" + "p(r>0): " 
+    tite = tite+ " "+str(round(1-a_with_threshold_backward_hist_dist.cdf(0),3)) + " <r>0>: " +  str(round(a_with_threshold_backward_hist_dist.mean(),2)) + "<br>" + condi
     #ax = b_df.plot.hist(bins=my_bins,title="a)"+tit)
-    fig2 = px.histogram(b_df, nbins=my_bins, title=tit)
+    fig2 = px.histogram(b_df, nbins=my_bins, title=tite)
     figupdate(fig2)
 
 
     ###############################################################
     ## cummulative wahrschienlichkeiten anzeigen
 
-    c_von = int(min( a_with_threshold_backward_forward_list)-1.0)
-    c_bis = int(max( a_with_threshold_backward_forward_list)+1.0)
+    c_von = int(min( a_with_threshold_backward_list)-1.0)
+    c_bis = int(max( a_with_threshold_backward_list)+1.0)
 
     X = np.linspace(c_von, c_bis,my_bins)
 
     cu = pd.DataFrame(data=X)
-    cu["p"]= [a_with_threshold_backward_forward_hist_dist.cdf(X)[i] for i in range(my_bins)]
+    cu["p"]= [a_with_threshold_backward_hist_dist.cdf(X)[i] for i in range(my_bins)]
     cu = cu.set_index(0)
     cu.index.name = "return[%]"
-    fig3 = px.line(cu, title="Cond. Cum.Prob. der Renditen bkwd= -"+ str(bwd_gap)+" bars,  fwd = "+ str(fwd_gap)+" bars" + "<br>" + condi)
+    tite = "Wahrscheinlkeiten: Given t_bwd= -"+ str(t_bwd)+" bars and r_bwd >" + str(r_bwd) 
+    tite = tite + ": How is distr. of rendite after " + str(t_fwd)+ "more bars ?" 
+    fig3 = px.line(cu, title=tite)
     figupdate(fig3)
 
     
@@ -309,39 +365,58 @@ def main(stock,bwd_gap,fwd_gap,threshold_bwd, threshold_fwd, condi):
     cu["p"]= [backward_hist_dist.cdf(Y)[i] for i in range(my_bins)]
     cu = cu.set_index(0)
     cu.index.name = "return[%]"
-    fig4 = px.line(cu, title="Cum.Prob. der Renditen bkwd, mit dt= -"+ str(bwd_gap)+" bars" + "<br>" +" ohne Bedingung an Renditen")
+    fig4 = px.line(cu, title="Cum.Prob. der Renditen, mit dt= -"+ str(t_bwd)+" bars" + "<br>" +" ohne Bedingung an Renditen")
     figupdate_nonHist(fig4)
     #fig4.write_html(RSI_strat_SETUP.output_path + "Cu.Prob.OHNE Incident.hml")
     
 
+    sns.set(style = "darkgrid")
 
-    RSI_strat_SETUP.figures_to_html([fig, figs[0],figRSIHist,fig0,fig1,fig2,fig3,fig4,fig00],RSI_strat_SETUP.output_path + "//"+"dashboard.html")
-
-
-
-
-    """ fig2 = px.histogram(df["d_"+"int_val"+"d"], histnorm='probability density', nbins=bin_val)
-
-    st.plotly_chart(fig2) """
+    df["time"]= df.reset_index().index
+    
+   # plt.show()
 
 
 
-if __name__ == "__main__":
-        opts, args = getopt.getopt(sys.argv,"hs:b:f:r:",["back_gap=","fwd_gap=","rendite="])
-        for opt, arg in opts:
-            if opt == '-h':
-                print('RSI_strat.py -b <back_gap> -f <fwd_gap> -r <rendite>')
-                sys.exit()  
-            elif opt =="-b":
-                back_gap = arg 
-            elif opt =="-s":
-                stock = arg    
-            elif opt =="-f":
-                fwd_gap = arg
-            elif opt =="-r": 
-               rendite = arg        
-       #main(stock,          back_gap, fwd_gap, threshold rendite backward, threshold renidte forward,comment )
-        main("holc_data.csv",  1   ,  22       , 1000 , 10, "bel. % nach 1 Bars. Wie sieht es nach 22 Bars nach vorne aus ?")
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = '3d')
+
+    x = df['z-score']
+    y = df['Percent Change']
+    z = df['ATR20']
+
+    ax.set_xlabel("z")
+    ax.set_ylabel("%")
+    ax.set_zlabel("ATR20")
+
+    ax.scatter(x, y, z)
+    #sns.scatterplot(data=df,x="z-score",y="Percent Change",hue="ATR20",size="time")
+    plt.show
+
+    
+    
 
 
-# %%
+
+
+    ##RSI_strat_SETUP.figures_to_html([fig, figs[0],figRSIHist,fig0,fig1,fig2,fig3,fig4],RSI_strat_SETUP.output_path + "dashboard.html")
+
+
+startdatum = "2021-07-01"
+enddatum = "2022-09-06"
+roll_window = 60
+
+t_bwd = 40
+r_bwd = -100
+
+t_fwd=  10
+
+rational  = "Nach " + str(t_bwd) + " Balken und r > " + str(r_bwd)
+rational = rational + "% Rendite"+": Wie sieht die Verteilung der Renditen nach weiteren "+str(t_fwd) + " Balken aus."
+print(rational)
+
+#main(stock,          back_gap, fwd_gap, threshold rendite backward, threshold renidte forward,comment )
+
+main("holc_data.csv",  t_bwd   ,  t_fwd       , r_bwd , rational)
+
+
