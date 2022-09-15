@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+
+
 """
 Created on Wed Jul  7 17:46:12 2021
 
@@ -15,6 +17,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
+
 
 
 from pathlib import Path
@@ -390,8 +393,9 @@ def main(stock,t_bwd,t_fwd,r_bwd, condi):
     ax.set_zlabel("ATR20")
 
     ax.scatter(x, y, z)
-    #sns.scatterplot(data=df,x="z-score",y="Percent Change",hue="ATR20",size="time")
-    plt.show
+    fig.show()
+    sns.scatterplot(data=df,x="z-score",y="Percent Change",hue="ATR20",size="time")
+    plt.show()
 
     
     
