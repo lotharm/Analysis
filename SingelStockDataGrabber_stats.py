@@ -25,7 +25,7 @@ pfad = os.path.realpath(os.path.join(parentdir, 'ETFS'))
 
 
 ######################################################
-stock = ["OSG",]
+stock = ["^TYX",]
 #####################################################
 keyword = "macro"
 

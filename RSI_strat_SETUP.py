@@ -26,7 +26,7 @@ mypath = os.path.realpath(os.path.join(pfad, my_setup.specific_datapath))
 output_path = mypath
 
 startdatum = "2011-10-01"
-enddatum = "2022-05-30"
+enddatum = "2022-10-0"
 
 #https://www.tradingview.com/x/RHiQkrp0/
 
