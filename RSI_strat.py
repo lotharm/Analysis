@@ -38,7 +38,6 @@ import sys, getopt
 #from yahoo_fin import stock_info as si
 
 import numpy as np
-import numpy as np
 from sklearn import linear_model
 import scipy.stats
 
