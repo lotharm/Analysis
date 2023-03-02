@@ -25,9 +25,9 @@ pfad = os.path.realpath(os.path.join(parentdir, 'ETFS'))
 
 
 ######################################################
-stock = ["OSG",]
+stock = ["GLD",]
 #####################################################
-keyword = "macro"
+keyword = "Rohstoffe"
 
 mypath = os.path.realpath(os.path.join(pfad, my_setup.specific_datapath)) 
 
