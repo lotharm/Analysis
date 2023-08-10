@@ -7,13 +7,11 @@ Created on Wed Jul  7 17:46:12 2021
 
 @author: Schroeder
 """
+# %%
 
 from turtle import color
 import matplotlib
 from matplotlib import colors
-
-
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
@@ -42,9 +40,6 @@ from sklearn import linear_model
 import scipy.stats
 
 
-import numpy as np
-from sklearn import linear_model
-
 import pandas as pd
 
 import plotly.io as pio
@@ -56,6 +51,12 @@ from plotly.offline import init_notebook_mode, iplot
 
 import os
 import sys
+
+plt.rcParams['figure.figsize'] = [10,6]
+plt.rcParams.update({'font.size': 18})
+plt.style.use('seaborn')
+
+
 currentdir = os.path.abspath('')
 parentdir = os.path.realpath(os.path.join(currentdir, '..'))
 sys.path.insert(0, parentdir) 
@@ -64,6 +65,8 @@ sys.path.insert(0, libdir)
 
 import signalgenerator as sg
 import underly  as ul
+
+from lib import Indikatoren
 
 
 
@@ -188,33 +191,20 @@ def main(pf,t_bwd,t_fwd,r_bwd, greatersmaller,condi):
 
 
 
-    data = RSI(data, 21)
-    
-    data["EMA50_dist"] = data["Factor"]-data["EMA100"]
+    data["pctchg"]=data["Close"].pct_change()
+    data['Factor'] =  (data['pctchg'] + 1).cumprod()
+    data=Indikatoren.ATR(data,20)
+    data["EMA50"]=data["Factor"].ewm(span=50,adjust=False).mean()
+    data["EMA10"]=data["Factor"].ewm(span=10,adjust=False).mean()
+    data["EMA21"]=data["Factor"].ewm(span=21,adjust=False).mean()
+    data["EMA100"]=data["Factor"].ewm(span=100,adjust=False).mean()
+    data["EMA80"]=data["Factor"].ewm(span=80,adjust=False).mean()
+    data["EMA200"]=data["Factor"].ewm(span=200,adjust=False).mean()
+
     # Some statistics:  pecentile:
     #df.rolling(window=3, center=False).apply(lambda x: pd.Series(x).quantile(0.75))
     
-    #z-Score
-    ############################
-    window=100
-    a=pf.zscore_rolling_scaled(1000,'Factor',"EMA100")
-    data=pd.merge(data,a,left_index=True, right_index=True)
-
-    hist_cum_plot(a["z-score"].dropna(),ticker+": z-score Histogramm ",60) 
-    print("a:\n")
-    print(a)
-    #target_column = 'EMA50_dist'
-    #roll = df[target_column].rolling(window)
-    #df['z-score'] = (df[target_column] - roll.mean()) / roll.std()
-    
-    fig, ax = plt.subplots(figsize=(16,12))
-    fig.suptitle(ticker+": Price(fat) vs. zscore")
-    ax.plot(data[["Factor","EMA200","EMA100","EMA21","EMA50"]])
-    c2 = ax.twinx()
-
-    ax.set_title("z-score EMA_100/250, 100days sample")
-    c2.plot(data["z-score"], color='green',linewidth=3.0)
-    plt.show(block=False)
+  
 
     
     #Schreibe raus den z-score
@@ -256,14 +246,6 @@ def main(pf,t_bwd,t_fwd,r_bwd, greatersmaller,condi):
     #figupdate_nonHist(fig00,"Datum","---> Rendite nach "+ str(t_fwd)+ " Bars" + " ab r>" + str(r_fwd
         
 
-
-    ##### rsi Statistik:
-    rsi = data["rsi_sma"].dropna()
-    hist_cum_plot(rsi,ticker+": RSI Histogramm",30) 
-
-
-    rsi_sma_hist = np.histogram(rsi, bins=my_bins)
-    rsi_sma_hist_dist = scipy.stats.rv_histogram(rsi_sma_hist)
 
 
     ##### renditen nach time_gap_back Zeitschrittten Statistik:
@@ -324,17 +306,17 @@ if __name__ == "__main__":
     #     exit()
 
     universe = "fx"
-    ticker = "COMEX_GC1"
+    ticker = "gc-15m_bk"
     
     t_bwd = 10
     r_bwd = 10000
     t_fwd=  10
     greatersmaller="smaller"
-
-
+    startdatum = "2011-11-23"
+    enddatum = "2012-01-10"
 
     pf=ul.underlying(universe,ticker)
-    pf.read_grabbed_data()
+    pf.read_grabbed_data()                                                           
     # startdatum = "2018-07-01"
 
     enddatum = "2029-04-06"
