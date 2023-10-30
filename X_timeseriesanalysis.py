@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
 
-
-
-"""
-Created on Wed Jul  7 17:46:12 2021
-
-@author: Schroeder
-"""
-# %%
-
+## Imports & Inits 
 from turtle import color
 import matplotlib
 from matplotlib import colors
@@ -17,12 +9,16 @@ import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 
 
+from ipywidgets import interact, interactive, fixed, interact_manual
+import ipywidgets as widgets
+
 
 from pathlib import Path
 import csv
 
-from datetime import datetime
-from datetime import date
+import datetime
+# from datetime import datetime
+# from datetime import date
 import calendar
 
 import os
@@ -41,6 +37,7 @@ import scipy.stats
 
 
 import pandas as pd
+import numpy as np
 
 import plotly.io as pio
 import plotly.express as px
@@ -52,10 +49,12 @@ from plotly.offline import init_notebook_mode, iplot
 import os
 import sys
 
+# matplotlib qt
+
 plt.rcParams['figure.figsize'] = [10,6]
 plt.rcParams.update({'font.size': 18})
 plt.style.use('seaborn')
-
+plt.rcParams['axes.grid'] = True
 
 currentdir = os.path.abspath('')
 parentdir = os.path.realpath(os.path.join(currentdir, '..'))
@@ -68,13 +67,9 @@ import underly  as ul
 
 from lib import Indikatoren
 
-
-
 #from sympy import maximum
 
 import RSI_strat_SETUP
-
-plt.rcParams['axes.grid'] = True
 
 
 #init_notebook_mode()
@@ -84,6 +79,32 @@ from lib import Indikatoren
 #pio.renderers.default = "vscode"
 #pio.renderers.default = "browser"
 
+def plot_system2(data,vol="FALSE"):
+    df2 = data.copy()
+    dates = np.arange(len(df2)) # We need this for mpl.plot()
+    price = df2['Close']
+    h_sma = df2['Close'].ewm(span=200,adjust=False).mean()
+    l_sma = df2['Close'].ewm(span=100,adjust=False).mean()
+    c_ema = df2['Close'].ewm(span=2,adjust=False).mean()
+    
+    if vol==True:
+        with plt.style.context('fivethirtyeight'):
+            fig, axes = plt.subplots(2,figsize=(10,10))
+            mpf.plot(df2, ax=axes[0],  show_nontrading=False, type='candle')
+            #ax.plot(dates, h_sma, linewidth=2, color='red', label='200EMA')
+            #ax.plot(dates, l_sma, linewidth=2, color='green', label='100EMA')
+            axes[0].plot(dates, h_sma, linewidth=1, color='blue', label='200EMA')
+            axes[0].axhline(y=1935)
+            axes[1].plot(df2["Volume"],color='purple', label='Vol.')
+            axes[1].plot(df2["Volume"].ewm(span=21,adjust=False).mean(),linewidth=0.2,color='red', label='Vol.')
+            plt.title("A System ")
+            #ax.set_ylabel('Price($)')
+            #plt.legend()
+    else:
+        with plt.style.context('fivethirtyeight'):
+            mpf.plot(df2,tight_layout=True,show_nontrading=False, figscale=2, type='candle')
+            plt.title("A System ")
+    plt.show() # This is needed outside of Jupyter
 
 def figupdate_nonHist(figure,xtit="",ytit=""):
     figure.update_layout(
@@ -110,19 +131,24 @@ def figupdate(figure):
     figure.show()
 
 
-def hist_cum_plot(df,title="Histogramn and Cum Dist.",bins=30,blocker=False): 
+def hist_cum_plot(df,title="Histogramn and Cum Dist.",bin=30,blocker=False): 
     fig, ax = plt.subplots(2,figsize=(8,6))
     fig.suptitle(title,fontsize = 6)
-    sns.histplot(df,bins =30,stat="density",ax=ax[0])
+    sns.histplot(df,bins=bin,stat="density",ax=ax[0])
     
     print("------------------------------------------")
     print(title+"\n")
     print(df.describe())
     print("------------------------------------------")
-    sns.histplot(df,bins =30,cumulative=1,stat="density",ax=ax[1])
+    sns.histplot(df,bins=bin,cumulative=1,stat="density",ax=ax[1])
     plt.show(block=blocker)
 
-
+def hist_cum_plot_simple(df,title="Histogramn and Cum Dist.",bin=30,blocker=False): 
+    fig, ax = plt.subplots(1,figsize=(6,4))
+    fig.suptitle(title,fontsize = 8)
+    sns.histplot(df,bins=bin,stat="density",ax=ax)
+    print(df.describe())
+    plt.show(block=blocker)
 
 
 #Relative Strength Index
@@ -156,178 +182,207 @@ def RSI(df, n):
     df["rsi_sma"]=rsi_sma
     return df
 
+# Widgets
+startdate=widgets.Text(
+    value='2022-01-01',
+    placeholder='yyyy-mm-dd',
+    description='Start Date',
+    disabled=False   
+)
+
+enddate=widgets.Text(
+    value='2023-06-06',
+    placeholder='yyyy-mm-dd',
+    description='End Date',
+    disabled=False   
+)
 
 
-def main(pf,t_bwd,t_fwd,r_bwd, greatersmaller,condi):
+# Widgets
+startdate2=widgets.Text(
+    value='2022-10-01',
+    placeholder='yyyy-mm-dd',
+    description='Plot von',
+    disabled=False   
+)
 
-    mypath = RSI_strat_SETUP.mypath
-
-    #onlyfiles = [f for f in listdir(mypath) if (isfile(join(mypath, f)) and not f.startswith("_")) ]
-
-    b=[]
-    c=[]
-    figs=[]
-    counter  = 0
-
-    ###########################
-    ##########################
-    time_gap_fwd = t_fwd
-    time_gap_back = t_bwd
-    rsi_threshold =75
-    return_threshold = r_bwd
-    my_bins = 50
-    ########################
-    ########################
+enddate2=widgets.Text(
+    value='2023-06-06',
+    placeholder='yyyy-mm-dd',
+    description='PLot bis',
+    disabled=False   
+)
 
 
+#display(startdate,enddate,startdate2,enddate2)
 
-    data=pf.grabbed_data.truncate(before=startdatum)
+## Read Data
+universe = "fx"
+ticker = "cl-15m_bk"
+
+t_bwd = 10
+r_bwd = 10000
+t_fwd=  10
+greatersmaller="smaller"
+
+startdatum = "2023-05-01"
+enddatum = "2023-10-01"
+
+pf=ul.underlying(universe,ticker)
+pf.read_grabbed_data(True)
+# startdatum = "2011-01-01"
+
+#Alternativ:
+#file_to_read="C:\\Temp\\Trading\\ETFS\\RES_fx\\Data\\gc-15m_bk.csv"
+#custom_date_parser = lambda x: datetime.strptime(x, "%d/%m/%Y %H:%M")
+#test = pd.read_csv(file_to_read,sep=";",decimal='.',index_col=["Date"],usecols=["Date","High","Open","Low","Close","Volume"],parse_dates=['Date'],date_parser=custom_date_parser)
     
-    # data[['MACD_day'],['MACDsign_day'],['MACDdif_day']].plot()
-    # plt.show(block=False)
-    
-    # data[['MACD_week']['MACDsign_week'],['MACDdif_week']].plot()
-    # plt.show(block=False)
+
+rational  = "Nach " + str(t_bwd) + " Balken und r " + greatersmaller + str(r_bwd)
+rational = rational + "% Rendite"+": Wie sieht die Verteilung der Renditen nach weiteren "+str(t_fwd) + " Balken aus."
+print(rational)
+
+# Fuelle den Dataframe mit weiteren Indikatoren und relevanten Scalars
+mypath = RSI_strat_SETUP.mypath
+
+#onlyfiles = [f for f in listdir(mypath) if (isfile(join(mypath, f)) and not f.startswith("_")) ]
+
+b=[]
+c=[]
+figs=[]
+counter  = 0
+
+###########################
+##########################
+time_gap_fwd = t_fwd
+time_gap_back = t_bwd
+rsi_threshold =75
+return_threshold = r_bwd
+my_bins = 50
+########################
+########################
 
 
 
-    data["pctchg"]=data["Close"].pct_change()
-    data['Factor'] =  (data['pctchg'] + 1).cumprod()
-    data=Indikatoren.ATR(data,20)
-    data["EMA50"]=data["Factor"].ewm(span=50,adjust=False).mean()
-    data["EMA10"]=data["Factor"].ewm(span=10,adjust=False).mean()
-    data["EMA21"]=data["Factor"].ewm(span=21,adjust=False).mean()
-    data["EMA100"]=data["Factor"].ewm(span=100,adjust=False).mean()
-    data["EMA80"]=data["Factor"].ewm(span=80,adjust=False).mean()
-    data["EMA200"]=data["Factor"].ewm(span=200,adjust=False).mean()
+data=pf.grabbed_data.truncate(before=startdatum,after=enddatum)
 
-    # Some statistics:  pecentile:
-    #df.rolling(window=3, center=False).apply(lambda x: pd.Series(x).quantile(0.75))
-    
-  
-
-    
-    #Schreibe raus den z-score
-    ############################
-    df = pd.DataFrame()
-    ### Formeln geprueft und korrekt:
-    # ############################################################################## 
-    # mit positivem time_gap in .diff(time_gap):  df[t]= (f(t)-f(t-time_gap))/f(t)
-    # also Veränderung ggü. f(t)
-    ### Also backward looking return !
-    df["back_"+str(t_bwd)]= 100*(data["Close"].diff(t_bwd)/data["Close"])
-    
-    # mit negativem time_gap in .diff(time_gap):  df[t]= (f(t+time_gap)-f(t))/f(t)
-    # also Veränderung ggü. f(t). Der klassische Differenzenequotient also !!!!
-    ### Also forckward looking return      
-    df["fwd_"+str(t_fwd)]= 100*(-data["Close"].diff(-t_fwd)/data["Close"])
-    #################################################################################
-    fwd_yield=df["fwd_"+str(t_fwd)].dropna()
-    hist_cum_plot(fwd_yield,ticker+": r_(+"+str(t_fwd)+"d)"+" yield Histogramm ",30) 
-
-
-    ####   select where backward threshold has been passed
-
-
-    if greatersmaller=="greater":
-        a = df["fwd_"+str(t_fwd)][df["back_"+str(t_bwd)] > r_bwd]
-    elif greatersmaller=="smaller":
-        a = df["fwd_"+str(t_fwd)][df["back_"+str(t_bwd)] < r_bwd]
-    
-    a_with_threshold_backward = a.dropna()
-    ####   select where forward threshold has been passed AS WELL :
-    #a_with_threshold_backward_forward =a_with_threshold_backward[a_with_threshold_backward>=r_fwd]
-    
-    fg, ax = plt.subplots(figsize=(16,12))
-    ax.bar(a_with_threshold_backward.index.to_list(),a_with_threshold_backward)
-    ax.set_title("Dates, fullfilling bwd condition and the yield after fwd days")
-    plt.show(block=False)
-    
-    #figupdate_nonHist(fig00,"Datum","---> Rendite nach "+ str(t_fwd)+ " Bars" + " ab r>" + str(r_fwd
-        
+# make hourly timeseries
+#############################
+f="H"
+#############################
+High_d=data["High"].groupby(pd.Grouper(freq=f)).max()
+Low_d=data["Low"].groupby(pd.Grouper(freq=f)).min()
+open_d=data["Open"].groupby(pd.Grouper(freq=f)).first()
+volume_d=data["Volume"].groupby(pd.Grouper(freq=f)).sum()
+close_d=data["Close"].groupby(pd.Grouper(freq=f)).last()
 
 
 
-    ##### renditen nach time_gap_back Zeitschrittten Statistik:
-    backward = df["back_"+str(t_bwd)].dropna()
-    hist_cum_plot(backward,ticker+": r_(-"+str(t_bwd)+"d)"+" yield Histogramm ",30) 
+d = {"High":High_d,"Low":Low_d,"Open":open_d,"Close":close_d,"Volume":volume_d}
+daten_hourly= pd.DataFrame(d)
+daten_hourly=daten_hourly.dropna()
+## daten[] sind die auf den gewuenschten Zeitrahemn gebrachten uersprungsdaten
+##########################################
 
-    # fig, ax = plt.subplots(2,figsize=(16,12))
-    # ax.set_title(str(t_bwd)+"day yield Histogramm ")
-    # sns.histplot(backward,bins =30,stat="density",ax=ax[0])
-    # print(backward.describe())
-    # sns.histplot(backward,bins =30,cumulative=1,stat="density",ax=ax[1])
-
-    #### bilde das Histogrammobjekt, um die Cummulierten Wahrscienlichkeiten zu berechen
-    backward_hist = np.histogram(backward, bins=my_bins)
-    backward_hist_dist = scipy.stats.rv_histogram(backward_hist)
-
-    ### 3. Histogramm der Renditen nach "time_gap_back" Tagen
+#daten["pctchg"]=daten["Close"].pct_change()
+#daten['Factor'] =  (daten['pctchg'] + 1).cumprod()
+#daten=Indikatoren.ATR(daten,1)
+#daten=Indikatoren.ATR(daten,100)
+#daten["Mean_Vol"]=daten["Volume"].ewm(span=21,adjust=False).mean()
+#daten["ATR_Vol"]=daten["Volume"]*(daten["ATR1"]/daten["ATR100"])
+#daten=Indikatoren.Zscore_rolling(daten,"ATR_Vol",100)
 
 
-    ### 2. Histogramm
-    laenge = len(a_with_threshold_backward)
-    pos = a_with_threshold_backward[a_with_threshold_backward>0]
-    neg = a_with_threshold_backward[a_with_threshold_backward<0]
-    negativ = len(neg)
-    positiv = len(pos)
-    tite =  condi + "\n"  + " t_bwd= -"+ str(t_bwd)+" bars,  t_fwd = "+ str(t_fwd)+ " bars "
-    tite = tite +"\n" + "Anzahl fwd Intervalle mit r(t_fwd)>0 : "+str(positiv) + "|" +  " r(t_fwd) < 0 : "  + str(negativ) + "|"+ "p(r<0): " + str(round(negativ/laenge,2)) + "|"  
-    tite = tite + "p(r>0): " +str(round(positiv/laenge,2)) + ", <r_pos>: " +  str(round(pos.mean(),2)) + ", <r_neg>: " +  str(round(neg.mean(),2))
-    #ax = b_df.plot.hist(bins=my_bins,title="a)"+tit)
-    hist_cum_plot(a_with_threshold_backward,ticker+": "+tite,30,True) 
-    z=2
-
-    ##RSI_strat_SETUP.figures_to_html([fig, figs[0],figRSIHist,fig0,fig1,fig2,fig3,fig4],RSI_strat_SETUP.output_path + "dashboard.html")
+# make daily timeseries
+#############################
+f="D"
+#############################
+High_d=data["High"].groupby(pd.Grouper(freq=f)).max()
+Low_d=data["Low"].groupby(pd.Grouper(freq=f)).min()
+open_d=data["Open"].groupby(pd.Grouper(freq=f)).first()
+volume_d=data["Volume"].groupby(pd.Grouper(freq=f)).sum()
+close_d=data["Close"].groupby(pd.Grouper(freq=f)).last()
 
 
-# if len(sys.argv)>=3:
-#     universe = sys.argv[1]
-#     ticker = sys.argv[2]
-# else:
-#     print("No Input from you; Need 2 Inputs=> <UNiverse> <ticker>")
-#     exit()
 
-# tickers = [ticker,]
-
-if __name__ == "__main__":
+d = {"High":High_d,"Low":Low_d,"Open":open_d,"Close":close_d,"Volume":volume_d}
+daten_daily= pd.DataFrame(d)
+daten_daily=daten_daily.dropna()
 
 
-    # if len(sys.argv)==8:
-    #     universe = sys.argv[1]
-    #     ticker=sys.argv[2]
-    #     startdatum = sys.argv[3]
-    #     t_bwd=int(sys.argv[4])
-    #     r_bwd=float(sys.argv[5])
-    #     t_fwd=int(sys.argv[6])
-    #     greatersmaller= sys.argv[7]
-    # else:  
-    #     print("No Input from you; Need 7 Inputs=> <Universe> <ticker> <yyyy-mm-dd> <t_bwd> <r_bwd> <t_fwd>  <greater/smaller>")
-    #     exit()
-
-    universe = "fx"
-    ticker = "gc-15m_bk"
-    
-    t_bwd = 10
-    r_bwd = 10000
-    t_fwd=  10
-    greatersmaller="smaller"
-    startdatum = "2011-11-23"
-    enddatum = "2012-01-10"
-
-    pf=ul.underlying(universe,ticker)
-    pf.read_grabbed_data()                                                           
-    # startdatum = "2018-07-01"
-
-    enddatum = "2029-04-06"
+# make weekly timeseries
+#############################
+f="W-Mon"
+#############################
+High_d=data["High"].groupby(pd.Grouper(freq=f)).max()
+Low_d=data["Low"].groupby(pd.Grouper(freq=f)).min()
+open_d=data["Open"].groupby(pd.Grouper(freq=f)).first()
+volume_d=data["Volume"].groupby(pd.Grouper(freq=f)).sum()
+close_d=data["Close"].groupby(pd.Grouper(freq=f)).last()
 
 
-    rational  = "Nach " + str(t_bwd) + " Balken und r " + greatersmaller + str(r_bwd)
-    rational = rational + "% Rendite"+": Wie sieht die Verteilung der Renditen nach weiteren "+str(t_fwd) + " Balken aus."
-    print(rational)
 
-    #main(stock,          back_gap, fwd_gap, threshold rendite backward, threshold renidte forward,comment )
+d = {"High":High_d,"Low":Low_d,"Open":open_d,"Close":close_d,"Volume":volume_d}
+daten_weekly= pd.DataFrame(d)
+daten_weekly=daten_weekly.dropna()
 
-    main(pf,  t_bwd   ,  t_fwd, r_bwd , greatersmaller, rational)
+Weeks=daten_weekly
+
+
+
+# data=Indikatoren.ATR(data,20)
+# data["EMA50"]=data["Factor"].ewm(span=50,adjust=False).mean()
+# data["EMA10"]=data["Factor"].ewm(span=10,adjust=False).mean()
+# data["EMA21"]=data["Factor"].ewm(span=21,adjust=False).mean()
+# data["EMA100"]=data["Factor"].ewm(span=100,adjust=False).mean()
+# data["EMA80"]=data["Factor"].ewm(span=80,adjust=False).mean()
+# data["EMA200"]=data["Factor"].ewm(span=200,adjust=False).mean()
+
+startzeit="00:00:00"
+endzeit="23:30:00"
+
+# 0 == Monday, 1= Tuesd...
+
+
+Day1 = 2
+Day2 = 3
+## Waehle Tage aus den Stunden Zeitreiehn aus 
+
+for d in [0,1,2,3,4,6]:
+    #TheDay_data_hourly=data[data.index.weekday==d]
+    TheDay_data_hourly=daten_hourly[daten_hourly.index.weekday==d]
+#Friday_data_hourly=daten_hourly[daten_hourly.index.weekday==Day2]
+# Waehle aus den gewählten TAgen das relevante Zeitfenseter heraus
+    TheDay_data_hourly_subset=TheDay_data_hourly.loc[(TheDay_data_hourly.index.time >= pd.Timestamp(startzeit).time()) & (TheDay_data_hourly.index.time <= pd.Timestamp(endzeit).time())]
+
+    occ=0
+    for i in range(len(Weeks)):
+        # Get the data for the specific Wednesday
+        Week = Weeks.iloc[i]
+        w=Week.name.strftime("%W")
+        y=Week.name.strftime("%Y")
+        # Filter the half-hourly data between 09:00 and 11:30 AM on that Wednesday
+        TheDay_prices = TheDay_data_hourly_subset[(TheDay_data_hourly_subset.index.strftime("%W") == w)
+                                          & (TheDay_data_hourly_subset.index.strftime("%Y") == y)]
+
+
+        # Check if the maximum price during that time period is equal to the Wednesday's high
+        print("TheDay High: ",round(TheDay_prices['High'].max(),3),"  ", "TheWeekHigh: ",  round(Week["High"],3))
+        if round(TheDay_prices['High'].max(),3) >= round(Week["High"],3):
+            print("catch!",round(TheDay_prices['High'].max(),3)," ", round(Week["High"],3))
+            occ += 1
+            #TheDay_prices
+
+    print(d, occ , len(Weeks))
+
+    Week=Weeks.iloc[2]
+w=Week.name.strftime("%W")
+y=Week.name.strftime("%Y")
+        # Filter the half-hourly data between 09:00 and 11:30 AM on that Wednesday
+TheDay_data_hourly_subset=TheDay_data_hourly.loc[(TheDay_data_hourly.index.time >= pd.Timestamp(startzeit).time()) & (TheDay_data_hourly.index.time <= pd.Timestamp(endzeit).time())]
+TheDay_prices = TheDay_data_hourly_subset[(TheDay_data_hourly_subset.index.strftime("%W") == w)
+                                          & (TheDay_data_hourly_subset.index.strftime("%Y") == y)]
+
+
 
 
